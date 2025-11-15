@@ -12,10 +12,6 @@ import torch.nn as nn
 from torch.utils.data import Dataset
 
 
-# ---------------------------
-# Config
-# ---------------------------
-
 class CFG:
     IMG_SIZE = 512
     BATCH_SIZE = 8
@@ -26,10 +22,6 @@ class CFG:
     DIM = 256
     NO_PRETRAIN = False
 
-
-# ---------------------------
-# Utils
-# ---------------------------
 
 def seed_everything(seed: int = 42):
     random.seed(seed)
@@ -50,10 +42,6 @@ def read_json_safe(path: str):
     except:
         return None
 
-
-# ---------------------------
-# Vocab
-# ---------------------------
 
 def simple_tokenize(s: str) -> List[str]:
     if not s:
@@ -87,10 +75,6 @@ class Vocab:
         return [self.stoi.get(t, 1) for t in toks]
 
 
-# ---------------------------
-# Dataset
-# ---------------------------
-
 class UniDSet(Dataset):
     def __init__(self, json_dir, jpg_dir, vocab=None, build_vocab=False, test_mode=False):
 
@@ -103,13 +87,11 @@ class UniDSet(Dataset):
             if data is None:
                 continue
 
-            # TEST MODE → bbox 없어도 통과
             if test_mode:
                 if "image_id" not in data or "query" not in data:
                     continue
-                bbox = [0, 0, 1, 1]   # dummy
+                bbox = [0, 0, 1, 1]
             else:
-                # TRAIN MODE → bbox 반드시 있어야 함
                 if "image_id" not in data or "query" not in data or "bbox" not in data:
                     continue
                 bbox = data["bbox"]
@@ -130,7 +112,6 @@ class UniDSet(Dataset):
                 "query_id": os.path.splitext(os.path.basename(jf))[0]
             })
 
-        # 🚨 test_mode에서는 supervised가 없어도 정상
         if len(self.items) == 0:
             raise RuntimeError("ERROR: No samples found in dataset folder.")
 
@@ -157,7 +138,6 @@ class UniDSet(Dataset):
         ids = torch.tensor(self.vocab.encode(it["query"]), dtype=torch.long)
         length = torch.tensor(len(ids), dtype=torch.long)
 
-        # TEST MODE → bbox dummy 그대로 사용 (어차피 무시됨)
         x, y, w, h = it["bbox"]
         cx = (x + w/2) / W
         cy = (y + h/2) / H
@@ -189,10 +169,6 @@ def collate_fn(batch):
 
     return imgs, ids, lens, targets, meta
 
-
-# ---------------------------
-# Model
-# ---------------------------
 
 class TextEncoder(nn.Module):
     def __init__(self, vocab_size, dim=CFG.DIM):
