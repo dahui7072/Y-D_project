@@ -1,0 +1,7 @@
+train_valid/
+train/
+val/
+*.jpg
+*.json
+.DS_Store
+
