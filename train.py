@@ -1,4 +1,5 @@
 import os
+import random
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -37,6 +38,7 @@ def train_one_epoch(model, loader, optim, device):
 # ---------------------------
 
 def main():
+    CFG.EPOCHS = 2 
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--json_dir", type=str, required=True)
@@ -45,17 +47,34 @@ def main():
     args = parser.parse_args()
 
     # Device (CUDA → MPS → CPU)
-    device = (
-        torch.device("cuda") if torch.cuda.is_available()
-        else torch.device("mps") if torch.backends.mps.is_available()
-        else torch.device("cpu")
-    )
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+    elif torch.backends.mps.is_available():
+        device = torch.device("mps")
+    else:
+        device = torch.device("cpu")
     print("Using device:", device)
 
     seed_everything(CFG.SEED)
 
     print("Loading dataset...")
-    train_ds = UniDSet(args.json_dir, args.jpg_dir, vocab=None, build_vocab=True)
+
+    # train mode
+    train_ds = UniDSet(
+        args.json_dir,
+        args.jpg_dir,
+        vocab=None,
+        build_vocab=True,
+        test_mode=False
+    )
+
+    # 🔥 5000개 랜덤 샘플링
+    if len(train_ds.items) > 5000:
+        random.shuffle(train_ds.items)
+        train_ds.items = train_ds.items[:5000]
+        print(f"Random sampled 5000 items (from {len(train_ds.items)}).")
+    else:
+        print(f"Dataset has only {len(train_ds.items)} samples → using all.")
 
     vocab = train_ds.vocab
     vocab_size = len(vocab.itos)
@@ -64,7 +83,7 @@ def main():
         train_ds,
         batch_size=CFG.BATCH_SIZE,
         shuffle=True,
-        num_workers=CFG.NUM_WORKERS,
+        num_workers=0,     # MPS에서는 0 추천
         collate_fn=collate_fn
     )
 
