@@ -8,14 +8,9 @@ from tqdm import tqdm
 from model import CFG, seed_everything, UniDSet, collate_fn, CrossAttnVLM
 
 
-# ---------------------------
-#  Train Loop (with tqdm)
-# ---------------------------
-
 def train_one_epoch(model, loader, optim, device, epoch, total_epochs):
     model.train()
     total_loss = 0
-
     pbar = tqdm(loader, desc=f"Epoch {epoch}/{total_epochs}", ncols=120)
 
     for imgs, ids, lens, targets, meta in pbar:
@@ -26,14 +21,11 @@ def train_one_epoch(model, loader, optim, device, epoch, total_epochs):
 
         optim.zero_grad()
         preds = model(imgs, ids, lens)
-
         loss = nn.functional.l1_loss(preds, targets)
         loss.backward()
         optim.step()
 
         total_loss += loss.item()
-
-        # 🔥 진행 중 loss 표시
         pbar.set_postfix({
             "batch_loss": loss.item(),
             "avg_loss": total_loss / (len(pbar) + 1)
@@ -41,10 +33,6 @@ def train_one_epoch(model, loader, optim, device, epoch, total_epochs):
 
     return total_loss / len(loader)
 
-
-# ---------------------------
-#  Main
-# ---------------------------
 
 def main():
     CFG.EPOCHS = 2
@@ -55,7 +43,6 @@ def main():
     parser.add_argument("--save_ckpt", type=str, default="./outputs/ckpt/cross_attn_vlm.pth")
     args = parser.parse_args()
 
-    # Device (CUDA → MPS → CPU)
     if torch.cuda.is_available():
         device = torch.device("cuda")
     elif torch.backends.mps.is_available():
@@ -66,9 +53,6 @@ def main():
 
     seed_everything(CFG.SEED)
 
-    print("Loading dataset...")
-
-    # train mode
     train_ds = UniDSet(
         args.json_dir,
         args.jpg_dir,
@@ -77,7 +61,6 @@ def main():
         test_mode=False
     )
 
-    # 🔥 5000개 랜덤 샘플링
     if len(train_ds.items) > 5000:
         random.shuffle(train_ds.items)
         train_ds.items = train_ds.items[:5000]
@@ -96,18 +79,13 @@ def main():
         collate_fn=collate_fn
     )
 
-    # Model
     model = CrossAttnVLM(vocab_size).to(device)
-
-    # Optimizer
     optim = torch.optim.Adam(model.parameters(), lr=CFG.LR)
 
-    # Train
     for epoch in range(1, CFG.EPOCHS + 1):
         loss = train_one_epoch(model, loader, optim, device, epoch, CFG.EPOCHS)
         print(f"[Epoch {epoch}/{CFG.EPOCHS}] Loss: {loss:.4f}")
 
-    # Save
     os.makedirs(os.path.dirname(args.save_ckpt), exist_ok=True)
     torch.save({
         "model": model.state_dict(),
