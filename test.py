@@ -7,13 +7,13 @@ from tqdm import tqdm
 from model import CFG, seed_everything, UniDSet, collate_fn, CrossAttnVLM
 
 
-# 🔥 query_text 안전 정제 (필요 최소한만)
+
 def clean_text(s: str) -> str:
     if s is None:
         return ""
     s = s.replace("\n", " ").replace("\r", " ")
-    s = s.replace(",", " ")      # CSV 깨짐 방지
-    s = s.replace('"', ' ')      # 따옴표 제거
+    s = s.replace(",", " ")      
+    s = s.replace('"', ' ')  
     s = s.replace("'", " ")
     s = s.strip()
     return s
@@ -42,7 +42,7 @@ def main():
 
     print("Using device:", device)
 
-    # Test dataset (전체 그대로!)
+   
     test_ds = UniDSet(
         args.json_dir,
         args.jpg_dir,
@@ -54,7 +54,7 @@ def main():
     loader = DataLoader(
         test_ds,
         batch_size=1,
-        shuffle=False,   # ✔ 순서 중요
+        shuffle=False, 
         num_workers=0,
         collate_fn=collate_fn
     )
@@ -89,7 +89,7 @@ def main():
 
         results.append([qid, qtext] + pred)
 
-    # CSV 저장 (🔥 quoting 제거!)
+   
     with open(args.save_csv, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerow(["query_id", "query_text", "pred_x", "pred_y", "pred_w", "pred_h"])
