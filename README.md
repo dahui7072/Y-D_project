@@ -115,7 +115,7 @@ ckpt/baseline.pth
 
 추론 실행 파일: **test.py**
 
-### **추론 실행 명령어**
+### **추론 실행 명령어(OS)**
 
 ```bash
 python test.py \
