@@ -1,11 +1,24 @@
 import os
 import csv
-import random
 import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from model import CFG, seed_everything, UniDSet, collate_fn, CrossAttnVLM
+
+
+# 🔥 query_text 안전 정제 (필요 최소한만)
+def clean_text(s: str) -> str:
+    if s is None:
+        return ""
+    s = s.replace("\n", " ").replace("\r", " ")
+    s = s.replace(",", " ")      # CSV 깨짐 방지
+    s = s.replace('"', ' ')      # 따옴표 제거
+    s = s.replace("'", " ")
+    s = s.strip()
+    return s
+
+
 
 
 def main():
@@ -15,7 +28,6 @@ def main():
     parser.add_argument("--jpg_dir", type=str, required=True)
     parser.add_argument("--ckpt", type=str, required=True)
     parser.add_argument("--save_csv", type=str, required=True)
-    parser.add_argument("--sample_size", type=int, default=5000)
     args = parser.parse_args()
 
     seed_everything()
@@ -29,9 +41,8 @@ def main():
         device = torch.device("cpu")
 
     print("Using device:", device)
-    print("Loading dataset...")
 
-    # Test dataset
+    # Test dataset (전체 그대로!)
     test_ds = UniDSet(
         args.json_dir,
         args.jpg_dir,
@@ -40,19 +51,10 @@ def main():
         test_mode=True
     )
 
-    TOTAL = len(test_ds.items)
-    SAMPLE = min(args.sample_size, TOTAL)
-
-    print(f"Random sampled {SAMPLE} items (from {TOTAL}).")
-
-    # random sampling
-    indices = random.sample(range(TOTAL), SAMPLE)
-    test_ds.items = [test_ds.items[i] for i in indices]
-
     loader = DataLoader(
         test_ds,
         batch_size=1,
-        shuffle=False,
+        shuffle=False,   # ✔ 순서 중요
         num_workers=0,
         collate_fn=collate_fn
     )
@@ -78,17 +80,22 @@ def main():
         with torch.no_grad():
             pred = model(imgs, ids, lens)[0].cpu().tolist()
 
+        # float clean
+        pred = [float(f"{v:.6f}") for v in pred]
+
         item = meta[0]
         qid = item["query_id"]
-        qtext = item["query"]
+        qtext = clean_text(item["query"])
 
         results.append([qid, qtext] + pred)
 
-    # Save CSV (submission format)
-    with open(args.save_csv, "w", newline="") as f:
+    # CSV 저장 (🔥 quoting 제거!)
+    with open(args.save_csv, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerow(["query_id", "query_text", "pred_x", "pred_y", "pred_w", "pred_h"])
         writer.writerows(results)
+        writer = csv.writer(f, quoting=csv.QUOTE_NONE, escapechar=' ')
+
 
     print(f"\nSaved submission file: {args.save_csv}")
 
