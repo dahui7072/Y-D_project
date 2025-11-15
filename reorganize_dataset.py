@@ -22,21 +22,19 @@ def main():
     for folder in folders:
         ensure_dir(os.path.join(base_dst, folder))
 
-    # train 폴더에서 전체 하위 폴더 탐색하여 분류
     move_files_recursive(
         os.path.join(base_src, 'train'),
         os.path.join(base_dst, 'train_json'),
         os.path.join(base_dst, 'train_jpg')
     )
 
-    # valid 폴더에서 전체 하위 폴더 탐색하여 분류
     move_files_recursive(
         os.path.join(base_src, 'valid'),
         os.path.join(base_dst, 'val_json'),
         os.path.join(base_dst, 'val_jpg')
     )
 
-    print("✅ 모든 파일을 dataset/에 정리 완료!")
+    print("모든 파일을 dataset/에 정리 완료!")
 
 if __name__ == '__main__':
     main()
