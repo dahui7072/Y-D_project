@@ -3,9 +3,9 @@
 
 본 레포지토리는 주최 측이 제공한 Baseline 모델 구조를 기반으로 하여,
 
-이미지기반 Visual Grounding Task를 수행하는 모델을 학습하고 추론할 수 있도록 구성되어 있습니다.
+이미지기반 Visual Grounding Task를 수행하는 모델을 학습하고 추론할 수 있도록 구성
 
-본 README는 다음 내용을 **완전 재현(Full Reproducibility)** 가능하도록 설명합니다:
+본 README는 다음 내용을 **완전 재현(Full Reproducibility)** 가능하도록 설명:
 
 - **모델 학습 방법 (Train)**
 - **모델 추론 방법 (Inference)**
@@ -16,7 +16,7 @@
 
 # 2. 개발 및 실행 환경(Environment)
 
-아래 환경에서 학습 및 추론을 검증하였습니다.
+아래 환경에서 학습 및 추론을 검증
 
 | 항목 | 사용 환경 |
 | --- | --- |
@@ -57,7 +57,7 @@ dataset/val/jpg/
 - Bounding Box (x, y, w, h) 예측
 - Smooth L1 Loss 기반 회귀 학습
 
-구조는 `model.py`에 정의되어 있습니다.
+구조는 `model.py`에 정의되어 있음
 
 ---
 
