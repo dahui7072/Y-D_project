@@ -3,19 +3,22 @@ import random
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
+from tqdm import tqdm
 
 from model import CFG, seed_everything, UniDSet, collate_fn, CrossAttnVLM
 
 
 # ---------------------------
-#  Train Loop
+#  Train Loop (with tqdm)
 # ---------------------------
 
-def train_one_epoch(model, loader, optim, device):
+def train_one_epoch(model, loader, optim, device, epoch, total_epochs):
     model.train()
     total_loss = 0
 
-    for imgs, ids, lens, targets, meta in loader:
+    pbar = tqdm(loader, desc=f"Epoch {epoch}/{total_epochs}", ncols=120)
+
+    for imgs, ids, lens, targets, meta in pbar:
         imgs = imgs.to(device)
         ids = ids.to(device)
         lens = lens.to(device)
@@ -30,6 +33,12 @@ def train_one_epoch(model, loader, optim, device):
 
         total_loss += loss.item()
 
+        # 🔥 진행 중 loss 표시
+        pbar.set_postfix({
+            "batch_loss": loss.item(),
+            "avg_loss": total_loss / (len(pbar) + 1)
+        })
+
     return total_loss / len(loader)
 
 
@@ -38,7 +47,7 @@ def train_one_epoch(model, loader, optim, device):
 # ---------------------------
 
 def main():
-    CFG.EPOCHS = 2 
+    CFG.EPOCHS = 2
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--json_dir", type=str, required=True)
@@ -72,7 +81,7 @@ def main():
     if len(train_ds.items) > 5000:
         random.shuffle(train_ds.items)
         train_ds.items = train_ds.items[:5000]
-        print(f"Random sampled 5000 items (from {len(train_ds.items)}).")
+        print(f"Random sampled 5000 items.")
     else:
         print(f"Dataset has only {len(train_ds.items)} samples → using all.")
 
@@ -83,7 +92,7 @@ def main():
         train_ds,
         batch_size=CFG.BATCH_SIZE,
         shuffle=True,
-        num_workers=0,     # MPS에서는 0 추천
+        num_workers=0,
         collate_fn=collate_fn
     )
 
@@ -95,7 +104,7 @@ def main():
 
     # Train
     for epoch in range(1, CFG.EPOCHS + 1):
-        loss = train_one_epoch(model, loader, optim, device)
+        loss = train_one_epoch(model, loader, optim, device, epoch, CFG.EPOCHS)
         print(f"[Epoch {epoch}/{CFG.EPOCHS}] Loss: {loss:.4f}")
 
     # Save
