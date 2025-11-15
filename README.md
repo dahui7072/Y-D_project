@@ -20,7 +20,6 @@
 
 | 항목 | 사용 환경 |
 | --- | --- |
-| GPU | **NVIDIA RTX 3090 (24GB VRAM)** 1장 |
 | CUDA | 11.8 |
 | Python | 3.9+ |
 | Framework | PyTorch 2.1 |
